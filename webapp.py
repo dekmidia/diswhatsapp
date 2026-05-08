@@ -2,9 +2,8 @@ import os
 import tempfile
 import threading
 from dataclasses import asdict
-from flask import Flask, render_template_string, request
-
-from main import normalize_number, run_automation
+from flask import Flask, render_template_string, request, redirect, url_for
+from main import normalize_number, run_automation, stop_automation
 
 
 app = Flask(__name__)
@@ -150,9 +149,18 @@ HTML = """<!doctype html>
         color: #0b0b0b;
         font-weight: 700;
         cursor: pointer;
+        transition: all 0.2s;
+      }
+      button.stop-btn {
+        background: #ef4444;
+        color: white;
+      }
+      button:hover:not([disabled]) {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
       }
       button[disabled] {
-        opacity: 0.6;
+        opacity: 0.5;
         cursor: not-allowed;
       }
       .status-grid {
@@ -167,7 +175,10 @@ HTML = """<!doctype html>
         border-radius: 12px;
         border: 1px solid var(--border);
         white-space: pre-wrap;
-        min-height: 150px;
+        height: 350px;
+        overflow-y: auto;
+        font-family: monospace;
+        font-size: 12px;
       }
       @media (max-width: 860px) {
         .status-grid { grid-template-columns: 1fr; }
@@ -199,6 +210,7 @@ HTML = """<!doctype html>
           <input type="file" name="image" accept="image/*">
           <div class="actions">
             <button type="submit" {% if running %}disabled{% endif %}>Iniciar</button>
+            <button type="button" class="stop-btn" onclick="stopProcess()" {% if not running %}disabled{% endif %}>Parar</button>
           </div>
         </form>
       </div>
@@ -230,6 +242,20 @@ HTML = """<!doctype html>
         document.body.classList.toggle("dark");
         const mode = document.body.classList.contains("dark") ? "dark" : "light";
         localStorage.setItem("dispwhatsapp-theme", mode);
+      });
+
+      function stopProcess() {
+        if (confirm("Deseja realmente parar o processo?")) {
+          fetch("/stop", { method: "POST" }).then(() => {
+            window.location.reload();
+          });
+        }
+      }
+
+      // Auto scroll logs
+      const logs = document.querySelectorAll('.log');
+      logs.forEach(log => {
+        log.scrollTop = log.scrollHeight;
       });
     </script>
   </body>
@@ -328,6 +354,14 @@ def index():
         not_found=not_found,
         running=STATUS["running"],
     )
+
+
+@app.route("/stop", methods=["POST"])
+def stop():
+    stop_automation()
+    STATUS["running"] = False
+    log_append("Processo interrompido pelo usuário.")
+    return "OK"
 
 
 if __name__ == "__main__":
