@@ -1,0 +1,22 @@
+# Logs
+*.log
+
+# Python Cache e Compilados
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+
+# Chrome/Browser profile e temporários
+chrome_profile/
+BrowserMetrics*/
+*.pma
+
+# Arquivos de sistema e SO
+.DS_Store
+Thumbs.db
